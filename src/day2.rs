@@ -5,30 +5,12 @@ use std::vec::Vec;
 use itertools::{iproduct};
 
 pub fn part_1() -> Result<usize, Box<dyn error::Error>> {
-    let buffer = fs::read_to_string("inputs/day2.txt")?;
-
-    let init_memory: Vec<usize> = buffer
-        .trim()
-        .split(",")
-        .map(|character| {
-            character.parse().unwrap()
-        })
-        .collect();
-
+    let init_memory = get_init_memory()?;
     execute_program(init_memory.clone(), 12, 2)
 }
 
 pub fn part_2() -> Result<usize, Box<dyn error::Error>> {
-    let buffer = fs::read_to_string("inputs/day2.txt")?;
-
-    let init_memory: Vec<usize> = buffer
-        .trim()
-        .split(",")
-        .map(|character| {
-            character.parse().unwrap()
-        })
-        .collect();
-
+    let init_memory = get_init_memory()?;
     let mut solution = (0, 0);
 
     for (noun, verb) in iproduct!(0..99, 0..99) {
@@ -42,9 +24,26 @@ pub fn part_2() -> Result<usize, Box<dyn error::Error>> {
     Ok(100 * solution.0 + solution.1)
 }
 
+// Internals
+
+fn get_init_memory() -> Result<Vec<usize>, Box<dyn error::Error>> {
+    let buffer = fs::read_to_string("inputs/day2.txt")?;
+
+    let init_memory: Vec<usize> = buffer
+        .trim()
+        .split(",")
+        .map(|character| {
+            character.parse().unwrap()
+        })
+        .collect();
+
+    Ok(init_memory)
+}
+
 fn execute_program(mut memory: Vec<usize>, noun: usize, verb: usize) -> Result<usize, Box<dyn error::Error>> {
-    // "To do this, before running the program,
-    // replace position 1 with the noune and replace position 2 with the verb."
+    // To do this, before running the program:
+    // - replace position 1 with the noun and
+    // - replace position 2 with the verb
     memory[1] = noun;
     memory[2] = verb;
 
@@ -56,10 +55,17 @@ fn execute_program(mut memory: Vec<usize>, noun: usize, verb: usize) -> Result<u
     Ok(solution)
 }
 
-enum OpCode {
+enum Instruction {
     Add {a: usize, b: usize, pos: usize},
     Multiply {a: usize, b: usize, pos: usize},
     Halt,
+}
+
+enum OpCode {
+    Add,
+    Multiply,
+    Halt,
+    Unknown
 }
 
 // Define our error types. These may be customized for our error handling cases.
@@ -87,27 +93,28 @@ impl error::Error for ProcessingError {
     }
 }
 
-fn process(codes: Vec<usize>) -> Result<Vec<usize>, ProcessingError> {
+fn process(mut memory: Vec<usize>) -> Result<Vec<usize>, ProcessingError> {
     // The index of the current slice
     let mut cursor: usize = 0;
-    let mut result_codes = codes;
 
     loop {
         // Take a slice of 4
-        let to_process = &result_codes[cursor..cursor + 4];
+        let to_process = &memory[cursor..cursor + 4];
 
-        // Convert to opcode
-        let opcode = opcode_from_slice(&to_process)?;
+        // Convert to instruction
+        let instruction = instruction_from_slice(&to_process)?;
 
-        // Evaluate opcode
-        result_codes = evaluate_opcode(opcode, result_codes);
+        // Evaluate instruction
+        memory = evaluate_instruction(instruction, memory);
 
         // Peek one instruction ahead, to see if we should halt
-        match result_codes[cursor + 4] {
+        match opcode_from_number(memory[cursor + 4]) {
             // Exit loop if we're halting
-            // TODO: I'd like this to be cleaner, why are we suddenly dealing with numbers?
-            // I wonder if opcode_from_slice is a bad assumption
-            99 => break Ok(result_codes),
+            // We could probably make this more generic if we had
+            // a map from instructions to expected instructions.
+            // But anyway, in this case Add and Multiply are 1+3 args,
+            // while Halt is 1+0 args. So it does not matter :)
+            OpCode::Halt => break Ok(memory),
             // Otherwise, loop
             _other => {
                 cursor = cursor + 4;
@@ -116,27 +123,36 @@ fn process(codes: Vec<usize>) -> Result<Vec<usize>, ProcessingError> {
     }
 }
 
-fn opcode_from_slice(code: &[usize]) -> Result<OpCode, ProcessingError> {
-    match code[0] {
-        1 => Ok(OpCode::Add {a: code[1], b: code[2], pos: code[3]}),
-        2 => Ok(OpCode::Multiply {a: code[1], b: code[2], pos: code[3]}),
-        99 => Ok(OpCode::Halt),
-        _unknown => Err(ProcessingError)
+fn opcode_from_number(number: usize) -> OpCode {
+    match number {
+        1 => OpCode::Add,
+        2 => OpCode::Multiply,
+        3 => OpCode::Halt,
+        _ => OpCode::Unknown
     }
 }
 
-fn evaluate_opcode(code: OpCode, mut codes: Vec<usize>) -> Vec<usize> {
-    match code {
-        OpCode::Add {a, b, pos} => {
-            codes[pos] = codes[a] + codes[b];
+fn instruction_from_slice(memory: &[usize]) -> Result<Instruction, ProcessingError> {
+    match opcode_from_number(memory[0]) {
+        OpCode::Add => Ok(Instruction::Add {a: memory[1], b: memory[2], pos: memory[3]}),
+        OpCode::Multiply => Ok(Instruction::Multiply {a: memory[1], b: memory[2], pos: memory[3]}),
+        OpCode::Halt => Ok(Instruction::Halt),
+        OpCode::Unknown => Err(ProcessingError)
+    }
+}
+
+fn evaluate_instruction(instruction: Instruction, mut memory: Vec<usize>) -> Vec<usize> {
+    match instruction {
+        Instruction::Add {a, b, pos} => {
+            memory[pos] = memory[a] + memory[b];
         },
-        OpCode::Multiply {a, b, pos} => {
-            codes[pos] = codes[a] * codes[b];
+        Instruction::Multiply {a, b, pos} => {
+            memory[pos] = memory[a] * memory[b];
         },
-        OpCode::Halt => ()
+        Instruction::Halt => ()
     }
 
-    codes
+    memory
 }
 
 
