@@ -1,8 +1,8 @@
+use itertools::iproduct;
 use std::error;
-use std::fs;
 use std::fmt;
+use std::fs;
 use std::vec::Vec;
-use itertools::{iproduct};
 
 pub fn part_1() -> Result<usize, Box<dyn error::Error>> {
     let init_memory = get_init_memory()?;
@@ -32,15 +32,17 @@ fn get_init_memory() -> Result<Vec<usize>, Box<dyn error::Error>> {
     let init_memory: Vec<usize> = buffer
         .trim()
         .split(",")
-        .map(|character| {
-            character.parse().unwrap()
-        })
+        .map(|character| character.parse().unwrap())
         .collect();
 
     Ok(init_memory)
 }
 
-fn execute_program(mut memory: Vec<usize>, noun: usize, verb: usize) -> Result<usize, Box<dyn error::Error>> {
+fn execute_program(
+    mut memory: Vec<usize>,
+    noun: usize,
+    verb: usize,
+) -> Result<usize, Box<dyn error::Error>> {
     // To do this, before running the program:
     // - replace position 1 with the noun and
     // - replace position 2 with the verb
@@ -56,8 +58,8 @@ fn execute_program(mut memory: Vec<usize>, noun: usize, verb: usize) -> Result<u
 }
 
 enum Instruction {
-    Add {a: usize, b: usize, pos: usize},
-    Multiply {a: usize, b: usize, pos: usize},
+    Add { a: usize, b: usize, pos: usize },
+    Multiply { a: usize, b: usize, pos: usize },
     Halt,
 }
 
@@ -65,7 +67,7 @@ enum OpCode {
     Add,
     Multiply,
     Halt,
-    Unknown
+    Unknown,
 }
 
 // Define our error types. These may be customized for our error handling cases.
@@ -128,33 +130,40 @@ fn opcode_from_number(number: usize) -> OpCode {
         1 => OpCode::Add,
         2 => OpCode::Multiply,
         3 => OpCode::Halt,
-        _ => OpCode::Unknown
+        _ => OpCode::Unknown,
     }
 }
 
 fn instruction_from_slice(memory: &[usize]) -> Result<Instruction, ProcessingError> {
     match opcode_from_number(memory[0]) {
-        OpCode::Add => Ok(Instruction::Add {a: memory[1], b: memory[2], pos: memory[3]}),
-        OpCode::Multiply => Ok(Instruction::Multiply {a: memory[1], b: memory[2], pos: memory[3]}),
+        OpCode::Add => Ok(Instruction::Add {
+            a: memory[1],
+            b: memory[2],
+            pos: memory[3],
+        }),
+        OpCode::Multiply => Ok(Instruction::Multiply {
+            a: memory[1],
+            b: memory[2],
+            pos: memory[3],
+        }),
         OpCode::Halt => Ok(Instruction::Halt),
-        OpCode::Unknown => Err(ProcessingError)
+        OpCode::Unknown => Err(ProcessingError),
     }
 }
 
 fn evaluate_instruction(instruction: Instruction, mut memory: Vec<usize>) -> Vec<usize> {
     match instruction {
-        Instruction::Add {a, b, pos} => {
+        Instruction::Add { a, b, pos } => {
             memory[pos] = memory[a] + memory[b];
-        },
-        Instruction::Multiply {a, b, pos} => {
+        }
+        Instruction::Multiply { a, b, pos } => {
             memory[pos] = memory[a] * memory[b];
-        },
-        Instruction::Halt => ()
+        }
+        Instruction::Halt => (),
     }
 
     memory
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -162,9 +171,15 @@ mod tests {
 
     #[test]
     fn test_process() {
-        assert_eq!(process(vec![1,0,0,0,99]).unwrap(), vec![2,0,0,0,99]);
-        assert_eq!(process(vec![2,3,0,3,99]).unwrap(), vec![2,3,0,6,99]);
-        assert_eq!(process(vec![2,4,4,5,99,0]).unwrap(), vec![2,4,4,5,99,9801]);
-        assert_eq!(process(vec![1,1,1,4,99,5,6,0,99]).unwrap(), vec![30,1,1,4,2,5,6,0,99]);
+        assert_eq!(process(vec![1, 0, 0, 0, 99]).unwrap(), vec![2, 0, 0, 0, 99]);
+        assert_eq!(process(vec![2, 3, 0, 3, 99]).unwrap(), vec![2, 3, 0, 6, 99]);
+        assert_eq!(
+            process(vec![2, 4, 4, 5, 99, 0]).unwrap(),
+            vec![2, 4, 4, 5, 99, 9801]
+        );
+        assert_eq!(
+            process(vec![1, 1, 1, 4, 99, 5, 6, 0, 99]).unwrap(),
+            vec![30, 1, 1, 4, 2, 5, 6, 0, 99]
+        );
     }
 }
