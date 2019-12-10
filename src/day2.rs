@@ -129,7 +129,7 @@ fn opcode_from_number(number: usize) -> OpCode {
     match number {
         1 => OpCode::Add,
         2 => OpCode::Multiply,
-        3 => OpCode::Halt,
+        99 => OpCode::Halt,
         _ => OpCode::Unknown,
     }
 }
