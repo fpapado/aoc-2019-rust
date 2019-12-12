@@ -67,7 +67,7 @@ enum OpCode {
     Add,
     Multiply,
     Halt,
-    Unknown,
+    Unknown(usize),
 }
 
 // Define our error types. These may be customized for our error handling cases.
@@ -130,7 +130,7 @@ fn opcode_from_number(number: usize) -> OpCode {
         1 => OpCode::Add,
         2 => OpCode::Multiply,
         99 => OpCode::Halt,
-        _ => OpCode::Unknown,
+        unknown => OpCode::Unknown(unknown),
     }
 }
 
@@ -147,7 +147,7 @@ fn instruction_from_slice(memory: &[usize]) -> Result<Instruction, ProcessingErr
             pos: memory[3],
         }),
         OpCode::Halt => Ok(Instruction::Halt),
-        OpCode::Unknown => Err(ProcessingError),
+        OpCode::Unknown(opcode) => Err(ProcessingError),
     }
 }
 
